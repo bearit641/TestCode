@@ -1,0 +1,89 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block main_cards %}
+  <div class="container-fluid">
+    <div id='id_weight_class' class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Weight Class
+            </h4>
+          </div>
+          <div class="card-body">
+            <form method="POST"
+                  enctype="multipart/form-data"
+                  action="{% url 'invoicing:weight_class' %}"
+            >
+              {% csrf_token %}
+              {% for field in form.visible_fields %}
+                <label for="id_weight_class_file">
+                  Upload Weight Class File:
+                </label>
+                {{ field }}
+              {% endfor%}
+              <input type=submit class="btn btn-sm btn-primary float-right" value="Upload">
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Weight Class Record
+            </h4>
+            <div class="float-right">
+              <a
+                id="'id_weight_export_btn"
+                href="{% url 'invoicing:weight_class_export' %}"
+                class="btn btn-sm btn-primary d-none d-md-inline-block"
+                target="_blank"
+              >
+                Export to CSV
+              </a>
+            </div>
+          </div>
+          <div class="card-body">
+            <table id="id_weight_table" class="table table-hover table-sm">
+              <thead>
+                <tr>
+                  <th>Id</th>
+                  <th>Name</th>
+                  <th>Min Weight</th>
+                  <th>Max Weight</th>
+                  <th>Service</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                {% for weight_class in weight_classes %}
+                <tr>
+                  <td>{{ weight_class.id }}</td>
+                  <td>{{ weight_class.name }}</td>
+                  <td>{{ weight_class.min_weight }}</td>
+                  <td>{{ weight_class.max_weight }}</td>
+                  <td>{{ weight_class.service_id }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js_onload %}
+  {{ block.super }}
+  <script>
+    $(document).ready(function () {
+      $('#id_weight_table').DataTable({
+        'order': [[ 4, 'asc' ]],
+        'iDisplayLength': 50
+      });
+      $('.dataTables_length').addClass('bs-select');
+    });
+  </script>
+{% endblock %}

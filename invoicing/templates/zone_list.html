@@ -1,0 +1,89 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block main_cards %}
+  <div class="container-fluid">
+    <div id='id_zone' class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Zones
+            </h4>
+          </div>
+          <div class="card-body">
+            <form method="POST"
+                  enctype="multipart/form-data"
+                  action="{% url 'invoicing:zone' %}"
+            >
+              {% csrf_token %}
+              {% for field in form.visible_fields %}
+                <label for="id_zone_file">
+                  Upload Zone File:
+                </label>
+                {{ field }}
+              {% endfor%}
+              <input type=submit class="btn btn-sm btn-primary float-right" value="Upload">
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Zone Records
+            </h4>
+            <div class="float-right">
+              <a
+                id="'id_zone_export_btn"
+                href="{% url 'invoicing:zone_export' %}"
+                class="btn btn-sm btn-primary d-none d-md-inline-block"
+                target="_blank"
+              >
+                Export to CSV
+              </a>
+            </div>
+          </div>
+          <div class="card-body">
+            <table id="id_zone_table" class="table table-hover table-sm">
+              <thead>
+                <tr>
+                  <th>Id</th>
+                  <th>Name</th>
+                  <th>ISO</th>
+                  <th>Service</th>
+                  <th>Post Codes</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                {% for zone in zones %}
+                <tr>
+                  <td>{{ zone.zone_id }}</td>
+                  <td>{{ zone.name }}</td>
+                  <td>{{ zone.iso }}</td>
+                  <td>{{ zone.service_id }}</td>
+                  <td>{{ zone.post_codes }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js_onload %}
+  {{ block.super }}
+  <script>
+    $(document).ready(function () {
+      $('#id_zone_table').DataTable({
+        'order': [[ 4, 'asc' ]],
+        'iDisplayLength': 50
+      });
+      $('.dataTables_length').addClass('bs-select');
+    });
+  </script>
+{% endblock %}

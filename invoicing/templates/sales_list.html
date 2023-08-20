@@ -1,0 +1,92 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block main_cards %}
+  <div class="container-fluid">
+
+    <div id='id_sales_rate' class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Sales
+            </h4>
+          </div>
+          <div class="card-body">
+            <form method="POST"
+                  enctype="multipart/form-data"
+                  action="{% url 'invoicing:sales' %}"
+            >
+              {% csrf_token %}
+              {% for field in form.visible_fields %}
+                <label for="id_sales_file">
+                  Upload Sales File:
+                </label>
+                {{ field }}
+              {% endfor%}
+              <input type=submit class="btn btn-sm btn-primary float-right" value="Upload">
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Sales Rate
+            </h4>
+            <div class="float-right">
+              <a
+                id="'id_sales_export_btn"
+                href="{% url 'invoicing:sales_export' %}"
+                class="btn btn-sm btn-primary d-none d-md-inline-block"
+                target="_blank"
+              >
+                Export to CSV
+              </a>
+            </div>
+          </div>
+          <div class="card-body">
+            <table id="id_sales_table" class="table table-hover table-sm">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Courier</th>
+                  <th>Service</th>
+                  <th>Weight Class</th>
+                  <th>Zone</th>
+                  <th>Price</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                {% for sale in sales %}
+                <tr>
+                  <td>{{ sale.client_number }}</td>
+                  <td>{{ sale.courier }}</td>
+                  <td>{{ sale.service_id }}</td>
+                  <td>{{ sale.weight_class_id }}</td>
+                  <td>{{ sale.zone_id }}</td>
+                  <td>{{ sale.price }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js_onload %}
+  {{ block.super }}
+
+  <script>
+    $(document).ready(function () {
+      $('#id_sales_table').DataTable({
+        'order': [[ 0, 'asc' ]],
+        'iDisplayLength': 50
+      });
+      $('.dataTables_length').addClass('bs-select');
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,243 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block main_cards %}
+  <div class="container-fluid">
+    <!-- Success and error message container -->
+    <div id="id_send_invoice_message"></div>
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Generate Invoice
+            </h4>
+          </div>
+          <div class="card-header">
+            <form method="POST" enctype="multipart/form-data" action=".">
+              {% csrf_token %}
+              {% for field in form.visible_fields %}
+                <label for="id_billing_file">
+                  Upload Billing File:
+                </label>
+                {{ field }}
+              {% endfor%}
+              <input type=submit class="btn btn-sm btn-primary float-right" value="Upload">
+            </form>
+          </div>
+        </div>
+
+        <!-- Invoices -->
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Invoices
+            </h4>
+          </div>
+          <div class="card-body">
+            <table id="id_invoice_table" class="table table-hover table-sm">
+              <thead>
+                <tr>
+                  <th>File Name</th>
+                  <th>Invoice Number</th>
+                  <th>Client</th>
+                  <th>Contract Number</th>
+                  <th>Date Generated</th>
+                  <th>From Billing File</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for invoice in invoices %}
+                <tr>
+                  <td>{{ invoice.filename }}</td>
+                  <td>{{ invoice.invoice_number }}</td>
+                  <td>{{ invoice.client }}</td>
+                  <td>{{ invoice.contract_number }}</td>
+                  <td>{{ invoice.datetime_created|date:"M d Y" }}</td>
+                  <td>{{ invoice.billing_filename }}</td>
+                  <td>
+                    <a class="btn btn-sm btn-primary btn-send d-none d-md-inline-block" data-value="{{ invoice.id }}">
+                      Send
+                    </a>
+                    <a
+                      href="{% url 'invoicing:download' invoice.filename %}"
+                      class="btn btn-sm btn-primary d-none d-md-inline-block"
+                      target="_blank"
+                    >
+                      <i class="fe fe-download"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% include 'includes/invoice_send_form.html' %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Billing Files -->
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Billing Files
+            </h4>
+          </div>
+          <div class="card-body">
+            <table id="id_billing_table" class="table table-hover table-sm">
+              <thead>
+                <tr>
+                  <th>File Name</th>
+                  <th>File Size</th>
+                  <th>Upload Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for billing_file in billing_files %}
+                <tr>
+                  <td>{{ billing_file.filename }}</td>
+                  <td>{{ billing_file.size }}</td>
+                  <td>{{ billing_file.last_modified }}</td>
+                  <td>
+                    <a
+                      href="{% url 'invoicing:billing_file_download' billing_file.filename %}"
+                      class="btn btn-sm btn-primary d-none d-md-inline-block"
+                      target="_blank"
+                    >
+                      Download
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js_onload %}
+  {{ block.super }}
+  <script>
+    /**
+    * A script that will only allow the following extension on billing file upload.
+    */
+
+    const billingFile = document.getElementById("id_billing_file");
+    billingFile.accept = ".csv, .xlsb, .xlsx";
+  </script>
+  <script>
+    /**
+     * A script to apply datatable on the billing file list.
+    */
+
+    $(document).ready(function() {
+      $('#id_billing_table').DataTable({
+        "order": [[ 3, "desc" ]]
+      });
+    });
+  </script>
+  <script>
+    /**
+      * A script to apply datatable on the invoices list.
+    */
+
+    $(document).ready(function() {
+      $('#id_invoice_table').DataTable({
+        "order": [[ 1, "desc" ]]
+      });
+    });
+  </script>
+  <script>
+    /**
+      * A script to toggle send invoice form.
+    */
+
+    $(document).ready(function() {
+      $('#id_invoice_table').on('click', '.btn-send', (event) => {
+        console.log(event.currentTarget.dataset.value);
+        let invoice_id = event.currentTarget.dataset.value;
+        $(`#id_modal_invoice_send_form_${invoice_id}`).modal('toggle');
+      });
+    });
+  </script>
+  <script>
+    /**
+      * A script used for sending invoice.
+    */
+
+    $(document).ready(function() {
+      $('.invoice-send-btn').on('click', (event) => {
+        let invoice_id = event.currentTarget.dataset.value;
+        let email = $(`#id_invoice_send_email_input_${invoice_id}`).val();
+
+        // Add a loading effect on `track` button
+        let loading = (
+          `<span
+            id="id_loading_spinner"
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          Loading...`
+        );
+        $(event.currentTarget).html(loading);
+        $(event.currentTarget).attr('disabled', 'disabled');
+
+        console.log(email);
+        $.ajax({
+          url: "{% url 'invoicing:send_invoice' %}",
+          type: 'POST',
+          data: {
+            'csrfmiddlewaretoken' : '{{ csrf_token }}',
+            'invoice_id': invoice_id,
+            'email': email
+          },
+          success: function(data) {
+            // Remove the loading effect on the button to indicate request is successful.
+            $('#id_loading_spinner').remove();
+            $(event.currentTarget).html('Send');
+            $(event.currentTarget).removeAttr('disabled');
+            $(`#id_modal_invoice_send_form_${invoice_id}`).modal('toggle');
+            let message = (
+            `
+              <div 
+                class="alert alert-dismissible fade show alert-success"
+                role="alert"
+              > Message sent successfully
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+            `
+            );
+            $('#id_send_invoice_message').append(message);
+          },
+          error: function(data) {
+            $('#id_loading_spinner').remove();
+            $(event.currentTarget).html('Send');
+            $(event.currentTarget).removeAttr('disabled');
+            $(`#id_modal_invoice_send_form_${invoice_id}`).modal('toggle');
+            let message = (
+            `
+              <div 
+                class="alert alert-dismissible fade show alert-danger"
+                role="alert"
+              > Sending failed because of an error. You might have entered an invalid email address.
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+            `
+            );
+            $('#id_send_invoice_message').append(message);
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block main_cards %}
+  <div class="container-fluid">
+    <div id='id_service_code' class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Service
+            </h4>
+          </div>
+          <div class="card-body">
+            <form method="POST"
+                  enctype="multipart/form-data"
+                  action="{% url 'invoicing:service' %}"
+            >
+              {% csrf_token %}
+              {% for field in form.visible_fields %}
+                <label for="id_service_file">
+                  Upload Service File:
+                </label>
+                {{ field }}
+              {% endfor%}
+              <input type=submit class="btn btn-sm btn-primary float-right" value="Upload">
+            </form>
+          </div>
+        </div>
+
+        <!-- Services -->
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-header-title">
+              Services Record
+            </h4>
+            <div class="float-right">
+              <a
+                id="'id_service_export_btn"
+                href="{% url 'invoicing:service_export' %}"
+                class="btn btn-sm btn-primary d-none d-md-inline-block"
+                target="_blank"
+              >
+                Export to CSV
+              </a>
+            </div>
+          </div>
+          <div class="card-body">
+            <table id="id_services_table" class="table table-hover table-sm">
+              <thead>
+                <tr>
+                  <th>Id</th>
+                  <th>Code</th>
+                  <th>Name</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                {% for service in services %}
+                <tr>
+                  <td>{{ service.id }}</td>
+                  <td>{{ service.code }}</td>
+                  <td>{{ service.name }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block js_onload %}
+  {{ block.super }}
+
+  <script>
+    $(document).ready(function () {
+      $('#id_services_table').DataTable({
+        'order': [[ 1, 'asc' ]],
+        'iDisplayLength': 50
+      });
+      $('.dataTables_length').addClass('bs-select');
+    });
+  </script>
+{% endblock %}
